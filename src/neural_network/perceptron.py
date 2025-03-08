@@ -1,76 +1,66 @@
-from typing import Self
+from typing import TYPE_CHECKING
 
-import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-from matplotlib.colors import ListedColormap
+
+from neural_network.loss_functions.loss_functions import LOSS_DERIVATIVES, LOSS_FUNCTIONS
+
+if TYPE_CHECKING:
+    from neural_network.layer import Layer
 
 
 class Perceptron:
-    def __init__(self, learning_rate: float = 0.1, epochs: int = 50, random_state: float = 1) -> None:
+    def __init__(
+        self,
+        learning_rate: float = 0.1,
+        epochs: int = 50,
+        l2: float = 0.01,
+        loss_function: str = "sse",
+        batch_size: int = 8,
+    ) -> None:
+        loss_function_callable = LOSS_FUNCTIONS.get(loss_function)
+        if loss_function_callable is None:
+            msg = "There is no such loss function."
+            raise TypeError(msg)
+
+        loss_derivative_callable = LOSS_DERIVATIVES.get(loss_function)
+        if loss_derivative_callable is None:
+            msg = "There is no such loss function."
+            raise TypeError(msg)
+
         self.learning_rate = learning_rate
-        self.random_state = random_state
         self.epochs = epochs
+        self.l2 = l2
+        self.loss_function = loss_function_callable
+        self.loss_derivative = loss_derivative_callable
+        self.batch_size = batch_size
+        self.layers: list[Layer] = []
 
-    def fit(self, learning_data: np.ndarray, observed_data: np.ndarray) -> Self:
-        random_generator = np.random.RandomState(self.random_state)  # type: ignore[arg-type]
+    def fit(self, learning_data: np.ndarray, observed_data: np.ndarray) -> None:
+        pass
 
-        self.weights = random_generator.normal(loc=0.0, scale=0.01, size=1 + learning_data.shape[1])
+    def _forward(self, x: np.ndarray) -> None:
+        self.a: list[np.ndarray] = []
+        self.z: list[np.ndarray] = []
 
-        self.errors = []
-        for _ in range(self.epochs):
-            errors = 0
-            for xi, expected in zip(learning_data, observed_data, strict=False):
-                update = self.learning_rate * (expected - self.predict_value(xi))
-                self.weights[1:] += update * xi
-                self.weights[0] += update
-                errors += int(update != 0.0)
-            self.errors.append(errors)
-        return self
+        a, z = self.layers[0].forward(x)
+        self.a.append(a)
+        self.z.append(z)
 
-    def predict_value(self, data: np.ndarray) -> np.ndarray:
-        return np.where(self.net_input(data) >= 0.0, 1, -1)
+        for idx in range(1, len(self.layers)):
+            a, z = self.layers[idx].forward(a)
+            self.a.append(a)
+            self.z.append(z)
 
-    def net_input(self, data: np.ndarray) -> np.ndarray:
-        return np.dot(data, self.weights[1:]) + self.weights[0]  # type: ignore[no-any-return]
+    def _backpropagate(self, x: np.ndarray, y: np.ndarray) -> None:
 
+        delta = self.loss_derivative(y, self.a[-1]) * self.layers[-1].activation_derivative(self.z[-1])
 
-def plot_decision_regions(x: np.ndarray, y: np.ndarray, classifier: Perceptron, resolution: float = 0.05) -> None:
-    markers = ("x", "o", "s", "^", "v")
-    colors = ("red", "blue", "lightgreen", "gray", "cyan")
-    cmap = ListedColormap(colors[:len(np.unique(y))])
+        for idx in reversed(range(1, len(self.layers))):
+            delta = self.layers[idx].backward(self.a[idx - 1], delta, self.z[idx - 1])
+        self.layers[0].backward(x, delta)
 
-    x1_min, x1_max = x[:, 0].min() - 1, x[:, 0].max() + 1
-    x2_min, x2_max = x[:, 1].min() - 1, x[:, 1].max() + 1
-    xx1, xx2 = np.meshgrid(np.arange(x1_min, x1_max, resolution), np.arange(x2_min, x2_max, resolution))
+    def predict_value(self, data: np.ndarray) -> None:
+        pass
 
-    z = classifier.predict_value(np.array([xx1.ravel(), xx2.ravel()]).T)
-    z = z.reshape(xx1.shape)
-    plt.contourf(xx1, xx2, z, alpha=0.3, cmap=cmap)
-    plt.xlim(xx1.min(), xx1.max())
-    plt.ylim(xx2.min(), xx2.max())
-
-    for idx, cl in enumerate(np.unique(y)):
-        plt.scatter(
-            x=x[y == cl, 0],
-            y=x[y == cl, 1],
-            alpha=0.8, c=colors[idx],
-            marker=markers[idx],
-            label=cl,
-            edgecolors="black",
-        )
-
-
-if __name__ == "__main__":
-    iris_data = pd.read_csv("https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data", header=None)
-    y = iris_data.iloc[0:100, 4].to_numpy()
-    y = np.where(y == "Iris-setosa", 1, -1)
-
-    x = iris_data.iloc[0:100, [0, 2]].to_numpy()
-    ppn = Perceptron(learning_rate=0.1, epochs=10)
-    ppn.fit(x, y)
-    plot_decision_regions(x, y, classifier=ppn)
-    plt.xlabel("Length of sepal [cm]")
-    plt.ylabel("Length of petal [cm]")
-    plt.legend(loc="upper left")
-    plt.show()
+    def net_input(self, data: np.ndarray) -> None:
+        pass
