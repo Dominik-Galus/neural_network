@@ -19,10 +19,6 @@ class Layer:
         self.activation_derivative: Callable[[np.ndarray], np.ndarray] | None = ACTIVATION_DERIVATIVES[
             activation_function
         ]
-        if self.activation_function is None or self.activation_derivative is None:
-            msg = "There is no such activation function available"
-            raise TypeError(msg)
-
         self.neurons = neurons
         self.learning_rate = learning_rate
         self.inputs = inputs
@@ -30,8 +26,15 @@ class Layer:
         self.weights = np.random.default_rng(random_state).normal(loc=0, scale=0.1, size=(inputs, neurons))
         self.bias = np.ones(shape=neurons)
 
-    def forward(self, x: np.ndarray) -> None:
-        pass
+    def forward(self, x: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        if self.activation_function is None:
+            msg = "There is no such activation function available"
+            raise TypeError(msg)
+
+        z = np.dot(x, self.weights) + self.bias
+        a = self.activation_function(z)
+
+        return a, z
 
     def backward(self, x: np.ndarray) -> None:
         pass
