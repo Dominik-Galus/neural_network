@@ -1,17 +1,19 @@
-from typing import TYPE_CHECKING
+from typing import Self
 
 import numpy as np
+from numpy.typing import NDArray
+from tqdm import tqdm
 
+from neural_network.datasets.load_mnist import load_mnist
+from neural_network.layer import Layer
 from neural_network.loss_functions.loss_functions import LOSS_DERIVATIVES, LOSS_FUNCTIONS
-
-if TYPE_CHECKING:
-    from neural_network.layer import Layer
+from neural_network.preprocessing.one_hot import one_hot
 
 
 class Perceptron:
     def __init__(
         self,
-        learning_rate: float = 0.1,
+        learning_rate: float = 0.001,
         epochs: int = 50,
         l2: float = 0.01,
         loss_function: str = "sse",
@@ -35,8 +37,28 @@ class Perceptron:
         self.batch_size = batch_size
         self.layers: list[Layer] = []
 
-    def fit(self, learning_data: np.ndarray, observed_data: np.ndarray) -> None:
-        pass
+    def fit(self, learning_data: np.ndarray, observed_data: np.ndarray) -> Self:
+        observed_data_enc = one_hot(observed_data, np.unique(observed_data).shape[0])
+        learning_data_flatten = learning_data.reshape(
+            learning_data.shape[0],
+            learning_data.shape[1] * learning_data.shape[2],
+        )
+        self.cost_: list[np.ndarray] = []
+
+        for _ in tqdm(range(self.epochs), ascii=True, desc="Epochs"):
+            indices = np.arange(learning_data.shape[0])
+            np.random.default_rng().shuffle(indices)
+
+            for k in range(0, indices.shape[0] - self.batch_size + 1, self.batch_size):
+                batched = indices[k:k + self.batch_size]
+
+                self._forward(learning_data_flatten[batched])
+                self._backpropagate(learning_data_flatten[batched], observed_data_enc[batched])
+
+            self._forward(learning_data_flatten)
+            self.cost_.append(self.loss_function(self.a[-1], observed_data_enc))
+
+        return self
 
     def _forward(self, x: np.ndarray) -> None:
         self.a: list[np.ndarray] = []
@@ -59,8 +81,56 @@ class Perceptron:
             delta = self.layers[idx].backward(self.a[idx - 1], delta, self.z[idx - 1])
         self.layers[0].backward(x, delta)
 
-    def predict_value(self, data: np.ndarray) -> None:
-        pass
+    def predict(self, data: np.ndarray) -> NDArray[np.int8]:
+        self._forward(data)
+        return np.array(np.argmax(self.z[-1], axis=1), dtype=np.int8)
 
-    def net_input(self, data: np.ndarray) -> None:
-        pass
+    def add_layer(self, n_neuron: int = 30, activation: str = "relu", input_length: int | None = None) -> None:
+        if not self.layers and not input_length:
+            msg = "First layer must have an input length"
+            raise ValueError(msg)
+        if not input_length:
+            self.layers.append(Layer(
+                neurons=n_neuron,
+                inputs=self.layers[-1].neurons,
+                learning_rate=self.learning_rate,
+                activation_function=activation,
+                l2=self.l2))
+        else:
+            self.layers.append(Layer(
+                neurons=n_neuron,
+                inputs=input_length,
+                learning_rate=self.learning_rate,
+                activation_function=activation,
+                l2=self.l2))
+
+
+if __name__ == "__main__":
+    x_train, y_train = load_mnist()
+    x_test, y_test = load_mnist(kind="test")
+
+    model = Perceptron(epochs=25, loss_function="cross_entropy")
+    model.add_layer(50, "relu", 784)
+    model.add_layer(np.unique(y_train).shape[0], "sigmoid")
+    model.fit(x_train, y_train)
+
+    x_test_1 = x_test.reshape(
+        x_test.shape[0],
+        x_test.shape[1] * x_test.shape[2],
+    )
+
+    y_pred = model.predict(x_test_1)
+
+    import matplotlib.pyplot as plt
+    plt.plot(range(model.epochs), model.cost_)
+    plt.xlabel("Epoki")
+    plt.ylabel("Koszt")
+    plt.show()
+
+    fig, ax = plt.subplots(10, 4, figsize=(10, 15))
+    for i in range(40):
+        plt.subplot(10, 4, i + 1)
+        plt.imshow(x_test[i])
+        plt.title(f"Predicted Digit: {y_pred[i]}")
+    fig.tight_layout()
+    plt.show()

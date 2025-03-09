@@ -41,7 +41,7 @@ class Layer:
 
     def backward(self, a: np.ndarray, delta: np.ndarray, z: np.ndarray | None = None) -> NDArray[np.float64] | None:
         update_weight = np.dot(a.T, delta)
-        update_bias = np.sum(delta)
+        update_bias = np.sum(delta, axis=0)
 
         self.weights -= (update_weight + self.l2 * self.weights) * self.learning_rate
         self.bias -= update_bias * self.learning_rate
