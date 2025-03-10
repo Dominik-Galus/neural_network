@@ -7,10 +7,11 @@ from tqdm import tqdm
 from neural_network.datasets.load_mnist import load_mnist
 from neural_network.layer import Layer
 from neural_network.loss_functions.loss_functions import LOSS_DERIVATIVES, LOSS_FUNCTIONS
+from neural_network.model import Model
 from neural_network.preprocessing.one_hot import one_hot
 
 
-class Perceptron:
+class Perceptron(Model):
     def __init__(
         self,
         learning_rate: float = 0.001,
@@ -82,24 +83,28 @@ class Perceptron:
         self.layers[0].backward(x, delta)
 
     def predict(self, data: np.ndarray) -> NDArray[np.int8]:
-        self._forward(data)
+        data_flatten = data.reshape(
+            data.shape[0],
+            data.shape[1] * data.shape[2],
+        )
+        self._forward(data_flatten)
         return np.array(np.argmax(self.z[-1], axis=1), dtype=np.int8)
 
-    def add_layer(self, n_neuron: int = 30, activation: str = "relu", input_length: int | None = None) -> None:
-        if not self.layers and not input_length:
-            msg = "First layer must have an input length"
+    def add_layer(self, neurons: int = 30, activation: str = "relu", inputs: int | None = None) -> None:
+        if not self.layers and not inputs:
+            msg = "There is no input layer in neuraln network"
             raise ValueError(msg)
-        if not input_length:
+        if not inputs:
             self.layers.append(Layer(
-                neurons=n_neuron,
+                neurons=neurons,
                 inputs=self.layers[-1].neurons,
                 learning_rate=self.learning_rate,
                 activation_function=activation,
                 l2=self.l2))
         else:
             self.layers.append(Layer(
-                neurons=n_neuron,
-                inputs=input_length,
+                neurons=neurons,
+                inputs=inputs,
                 learning_rate=self.learning_rate,
                 activation_function=activation,
                 l2=self.l2))
@@ -112,14 +117,14 @@ if __name__ == "__main__":
     model = Perceptron(epochs=25, loss_function="cross_entropy")
     model.add_layer(50, "relu", 784)
     model.add_layer(np.unique(y_train).shape[0], "sigmoid")
-    model.fit(x_train, y_train)
+    model.fit(x_train[4000:], y_train[4000:])
 
     x_test_1 = x_test.reshape(
         x_test.shape[0],
         x_test.shape[1] * x_test.shape[2],
     )
 
-    y_pred = model.predict(x_test_1)
+    y_pred = model.predict(x_test)
 
     import matplotlib.pyplot as plt
     plt.plot(range(model.epochs), model.cost_)
