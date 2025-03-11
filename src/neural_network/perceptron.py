@@ -134,20 +134,18 @@ if __name__ == "__main__":
 
     import matplotlib.pyplot as plt
 
-    from neural_network.analysis_plots import cost_plot, cross_validation_plot, predict_examples
-    from neural_network.metrics.scores import cross_validation_score
+    from neural_network.analysis_plots import cost_plot, predict_examples
 
     model = Perceptron(epochs=25, loss_function="cross_entropy")
     model.add_layer(50, "relu", 784)
     model.add_layer(np.unique(y_train).shape[0], "sigmoid")
-    y = cross_validation_score(model, x_train, y_train, k=3)
-    cross_validation_plot(y)
-    plt.show()
     model.fit(x_train[4000:], y_train[4000:], validation_split=0.1)
 
     y_pred = model.predict(x_test)
 
     cost_plot(model.epochs, model.cost_)
+    plt.savefig("cost_plot.png")
     plt.show()
     predict_examples(x_test, y_pred)
+    plt.savefig("examples.png")
     plt.show()

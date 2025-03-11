@@ -15,10 +15,6 @@ This repository contains an implementation of a simple neural network using Pyth
 ## Requirements
 To run this project, install the following dependencies:
 ```bash
-pip install numpy tqdm matplotlib
-```
-or
-```bash
 pip install .
 ```
 
@@ -43,4 +39,3 @@ y_pred = model.predict(x_test)
 ![cross_val](https://github.com/user-attachments/assets/acbc6ab8-f400-42f3-a554-02a57a30bc34)
 ![cost_plot](https://github.com/user-attachments/assets/330dc7b1-7789-4ddc-989d-61d60f64cb84)
 ![examples](https://github.com/user-attachments/assets/753e2416-9518-474d-87c7-881595eb8a9f)
-
