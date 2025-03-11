@@ -14,7 +14,7 @@ def cross_validation_score(
     model: Model,
     x: NDArray[np.float64],
     y: NDArray[np.float64],
-    k: int = 2,
+    k: int = 10,
     ) -> list[float]:
     indices = np.arange(x.shape[0])
     np.random.default_rng().shuffle(indices)

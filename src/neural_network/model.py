@@ -7,7 +7,7 @@ from numpy.typing import NDArray
 
 class Model(ABC):
     @abstractmethod
-    def fit(self, learning_data: np.ndarray, observed_data: np.ndarray) -> Self:
+    def fit(self, learning_data: np.ndarray, observed_data: np.ndarray, validation_split: float = 0.1) -> Self:
         pass
 
     @abstractmethod
