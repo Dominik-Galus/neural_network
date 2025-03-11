@@ -130,6 +130,8 @@ if __name__ == "__main__":
     x_train, y_train = load_mnist()
     x_test, y_test = load_mnist(kind="test")
 
+    from neural_network.analysis_plots import cost_plot, predict_examples
+
     model = Perceptron(epochs=25, loss_function="cross_entropy")
     model.add_layer(50, "relu", 784)
     model.add_layer(np.unique(y_train).shape[0], "sigmoid")
@@ -138,15 +140,8 @@ if __name__ == "__main__":
     y_pred = model.predict(x_test)
 
     import matplotlib.pyplot as plt
-    plt.plot(range(model.epochs), model.cost_)
-    plt.xlabel("Epoki")
-    plt.ylabel("Koszt")
-    plt.show()
 
-    fig, ax = plt.subplots(10, 4, figsize=(10, 15))
-    for i in range(40):
-        plt.subplot(10, 4, i + 1)
-        plt.imshow(x_test[i])
-        plt.title(f"Predicted Digit: {y_pred[i]}")
-    fig.tight_layout()
+    cost_plot(model.epochs, model.cost_)
+    plt.show()
+    predict_examples(x_test, y_pred)
     plt.show()
