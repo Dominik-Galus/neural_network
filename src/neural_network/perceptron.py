@@ -40,6 +40,8 @@ class Perceptron(Model):
         self.layers: list[Layer] = []
 
     def fit(self, learning_data: np.ndarray, observed_data: np.ndarray, validation_split: float | None = None) -> Self:
+        self.accuracy_score_: list[float] | None = None
+
         if validation_split:
             validation_data, learning_data = np.array_split(
                 learning_data,
@@ -49,7 +51,7 @@ class Perceptron(Model):
                 observed_data,
                 [int(validation_split * len(observed_data))],
             )
-            self.accuracy_score_: list[float] = []
+            self.accuracy_score_ = []
 
         learning_data_flatten = learning_data.reshape(
             learning_data.shape[0],
@@ -130,16 +132,20 @@ if __name__ == "__main__":
     x_train, y_train = load_mnist()
     x_test, y_test = load_mnist(kind="test")
 
-    from neural_network.analysis_plots import cost_plot, predict_examples
+    import matplotlib.pyplot as plt
+
+    from neural_network.analysis_plots import cost_plot, cross_validation_plot, predict_examples
+    from neural_network.metrics.scores import cross_validation_score
 
     model = Perceptron(epochs=25, loss_function="cross_entropy")
     model.add_layer(50, "relu", 784)
     model.add_layer(np.unique(y_train).shape[0], "sigmoid")
+    y = cross_validation_score(model, x_train, y_train, k=3)
+    cross_validation_plot(y)
+    plt.show()
     model.fit(x_train[4000:], y_train[4000:], validation_split=0.1)
 
     y_pred = model.predict(x_test)
-
-    import matplotlib.pyplot as plt
 
     cost_plot(model.epochs, model.cost_)
     plt.show()
