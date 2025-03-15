@@ -8,7 +8,7 @@ from neural_network.datasets.load_mnist import load_mnist
 from neural_network.layer import Layer
 from neural_network.loss_functions.loss_functions import LOSS_DERIVATIVES, LOSS_FUNCTIONS
 from neural_network.metrics.scores import accuracy_score
-from neural_network.model import Model
+from neural_network.models.model import Model
 from neural_network.preprocessing.one_hot import one_hot
 
 

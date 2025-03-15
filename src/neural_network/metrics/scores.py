@@ -3,7 +3,7 @@ from copy import copy
 import numpy as np
 from numpy._typing import NDArray
 
-from neural_network.model import Model
+from neural_network.models.model import Model
 
 
 def accuracy_score(observed: NDArray[np.float64], predicted: NDArray[np.int8]) -> float:
